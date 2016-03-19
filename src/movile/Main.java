@@ -28,6 +28,11 @@ public class Main {
 		Map<Long, StateMachine> hash_user_statemachine = new LinkedHashMap<>();
 		while(true){
 			try {
+				//String js = "{ keyboard: [[\"1\",\"2\"]] }";
+				//System.out.println(js);
+				
+				
+				
 				JSONObject update = Client.doGet(urlbase+apibase+"getUpdates?limit=1&offset="+lastId);
 				
 				JSONArray result = update.getJSONArray("result");
@@ -45,7 +50,6 @@ public class Main {
 				Long usrId = user.getLong("id");
 				if(hash_user_statemachine.get(usrId) == null){
 					hash_user_statemachine.put(usrId, new StateMachine(usrId.toString(), root));
-					
 					String returnToUsr = "Hello " + user.getString("first_name") + " how are you today?\n";
 					List<NameValuePair> parameters = new ArrayList<>();
 					parameters.add(new BasicNameValuePair("chat_id", chatId.toString()));
@@ -77,12 +81,29 @@ public class Main {
 				}
 				
 				String processResult = sm.processMessage(usrMessage);
-				returnToUsr = processResult;
-				if("".equals(processResult)){
+				String kbd = "{\"keyboard\":[";
+				boolean hasKeyboard = false;
+				String realResult = "";
+				String[] messages = processResult.split("\n");
+				
+				for (int i = 0; i < messages.length; i++){
+					if (messages[i].charAt(0) == '/'){
+						hasKeyboard = true;
+						kbd += "[\"" + messages[i] + "\"]";
+						if (i != messages.length - 1) kbd += ",";
+					}
+					else realResult += messages[i];
+				}
+
+				kbd += "]}";
+				returnToUsr = realResult;
+				if("".equals(realResult)){
 					returnToUsr = "Type your command again";
 				}
 				
 				List<NameValuePair> parameters = new ArrayList<>();
+				if (hasKeyboard)
+					parameters.add(new BasicNameValuePair("reply_markup", kbd));
 				parameters.add(new BasicNameValuePair("chat_id", chatId.toString()));
 				parameters.add(new BasicNameValuePair("text", returnToUsr));
 				JSONObject ret = Client.doPost(urlbase+apibase+"sendMessage", parameters);			

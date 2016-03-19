@@ -26,7 +26,8 @@ public class StateMachine {
 	}
 
 	public String processMessage(String message) {
-		message = message.replaceAll("/", "");
+		message = message.replaceAll("/", "").split(" ")[0];
+		
 		int choice;
 
 		switch (message) {
