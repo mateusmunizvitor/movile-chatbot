@@ -1,5 +1,13 @@
 package movile;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.http.NameValuePair;
+import org.apache.http.message.BasicNameValuePair;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import util.Client;
@@ -10,7 +18,7 @@ public class Main {
 	public static void main(String[] args) {
 	
 		TreeNode root = new TreeNode("root","root",null,null);
-		
+
 		TreeNode cursor;
 
 		root.addChild("category","pizza",null);
@@ -28,20 +36,34 @@ public class Main {
 				new Item("Paperoni Pizza","002",0.5));
 		cursor = cursor.getFather().getChild("Drink");
 		cursor.addChild("food", "MtnDew", new Item("MtnDew", "012", 5));
-		
-		while(true){
-			
 
+		JSONObject botOption =  Client.doGet(urlbase+apibase+"getMe");
+		JSONObject botInfo = botOption.getJSONObject("result");
+		System.out.println(botInfo.get("first_name"));
+		
+		int lastId = 0;
+		while(true){
+			JSONObject update = Client.doGet(urlbase+apibase+"getUpdates?limit=1&offset="+lastId);
+			
+			JSONArray result = update.getJSONArray("result");
+			if(result.length() == 0) continue;
+			
+			JSONObject msg = result.getJSONObject(0).getJSONObject("message");
+			Long chatId = msg.getJSONObject("chat").getLong("id");
+			
+			String txt = (String) msg.get("text");
+			int id = result.getJSONObject(0).getInt("update_id");
+			JSONObject user = msg.getJSONObject("from");
+			
+			lastId = id+1;
+			System.out.println(user.getString("first_name") + ": " + txt);
+			
+			List<NameValuePair> parameters = new ArrayList<>();
+			parameters.add(new BasicNameValuePair("chat_id", chatId.toString()));
+			parameters.add(new BasicNameValuePair("text", "Fala leks!"));
+			
+			JSONObject ret = Client.doPost(urlbase+apibase+"sendMessage", parameters);
 		}
 		
-		JSONObject obj =  Client.doGet(urlbase+apibase+"getMe");
-		JSONObject obj2 = obj.getJSONObject("result");
-		System.out.println(obj2.get("first_name"));
-		
-		JSONObject update = Client.doGet(urlbase+apibase+"getUpdates");
-		JSONObject msg = update.getJSONObject("message");
-		
-		JSONObject txt = msg.getJSONObject("text");
-		System.out.println(txt);
 	}
 }
