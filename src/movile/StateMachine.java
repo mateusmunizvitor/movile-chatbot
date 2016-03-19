@@ -9,55 +9,109 @@ public class StateMachine {
 	private String userid;
 	private TreeNode tree;
 	private ArrayList<Item> items;
-	
-	public StateMachine(String userid, TreeNode restaurants){
+	private final TreeNode purchase;
+	private final TreeNode root;
+	private TreeNode restaurant;
+
+	public StateMachine(String userid, TreeNode root) {
 		this.userid = userid;
-		this.tree = restaurants;
+		this.tree = root;
+		this.purchase = new TreeNode("purchase", "purchase", null, null);
+		this.root = root;
+		this.restaurant = null;
 	}
-	
-	public void listOptions(){
+
+	public void listOptions() {
 	}
-	
-	public void processMessage(String message){
+
+	public String processMessage(String message) {
 		message = message.replaceAll("/", "");
 		int choice;
-		try {
-		choice = Integer.parseInt(message);
+
+		switch (message) {
+		case "start":
+			break;
+		case "back":
+			if (tree.getType().equals("restaurant")) {
+				items.clear();
+				restaurant = null;
+			} else if (tree.getType().equals("food")) {
+				tree = restaurant;
+			} else {
+				tree = tree.getFather();
+			}
+			return "";
+		case "purchase":
+			tree = purchase;
+			break;
+		default:
+			try {
+				choice = Integer.parseInt(message);
+			} catch (ParseException e) {
+				// print what
+				e.printStackTrace();
+				return "";
+			}
+			if (tree.getChildren().get(choice) == null) {
+				// print That option doesnt exist
+			}
+			tree = tree.getChildren().get(choice);
 		}
-		catch (ParseException e){
-			// print what
-			e.printStackTrace();
-			return;
-		}
-		if (tree.getChildren().get(choice) == null){
-			// print That option doesnt exist
-		}
-		tree = 
-		
-		switch (tree.type){
+
+		String ret = "";
+
+		switch (tree.getType()) {
 		case "root":
-			//What do you feel like today?
-			break;
+			ret += "What do you feel like today?\n";
+			for (int i = 0; i < tree.getChildren().size(); i++) {
+				ret += "/" + (i + 1) + " - " + tree.getChildren().get(i) + "\n";
+			}
+			ret += "/cancel - Cancel";
+			return ret;
 		case "category":
-			//We have found the following <tree.name> places:
-			listOptions();
-			break;
-		case "restaurants":
-			//print Escolheu restaurante MarioPizza
-			break;
+			ret += "We have found the following " + tree.getName() + " places:\n";
+			for (int i = 0; i < tree.getChildren().size(); i++) {
+				ret += "/" + (i + 1) + " - " + tree.getChildren().get(i) + "\n";
+			}
+			ret += "/back - Back\n";
+			ret += "/cancel - Cancel\n";
+			return ret;
+		case "restaurant":
+			ret += "Welcome to " + tree.getName() + "! What would you like?\n";
+			restaurant = tree;
+			for (int i = 0; i < tree.getChildren().size(); i++) {
+				ret += "/" + (i + 1) + " - " + tree.getChildren().get(i) + "\n";
+			}
+			ret += "/back - Back\n";
+			ret += "/cancel - Cancel\n";
+			return ret;
 		case "meal":
-			
-			break;
-		case "menu":
-			
-			break;
+			ret += "For " + tree.getName() + ", we have the following options:\n";
+			for (int i = 0; i < tree.getChildren().size(); i++) {
+				ret += "/" + (i + 1) + " - " + tree.getChildren().get(i) + " "
+						+ tree.getChildren().get(i).getItem().getPrice() + "\n";
+			}
+			ret += "/back - Back\n";
+			ret += "/cancel - Cancel\n";
+			return ret;
+		case "food":
+			ret += "Added " + tree.getItem().getName() + " to the shopping cart!\n";
+			for (int i = 0; i < items.size(); i++) {
+				ret += items.get(i).getName() + " - " + items.get(i).getPrice() + "\n";
+			}
+			ret += "Total: " + getTotalPrice() + "\n";
+			ret += "/back - Back\n";
+			ret += "/cancel - Cancel\n";
+			ret += "/purchase";
+			return ret;
+		default:
+			return "";
 		}
-		
 	}
-	
-	public double getTotalPrice(){
+
+	public double getTotalPrice() {
 		double ret = 0;
-		for (int i = 0; i < items.size(); i++){
+		for (int i = 0; i < items.size(); i++) {
 			ret += items.get(i).getPrice();
 		}
 		return ret;
