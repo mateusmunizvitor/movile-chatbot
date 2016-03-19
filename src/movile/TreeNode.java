@@ -20,7 +20,7 @@ public class TreeNode {
 	
 	public void addChild(String type, String name, Item item){
 		TreeNode newNode = new TreeNode(type, name, item, this);
-		this.children.put(name,newNode);
+		this.children.add(newNode);
 	}
 	
 	public TreeNode getChild(String _name){
