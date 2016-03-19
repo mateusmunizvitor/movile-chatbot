@@ -15,54 +15,81 @@ import util.Client;
 public class Main {
 	static final String urlbase = "https://api.telegram.org/bot";
 	static final String apibase = "192610098:AAEGaQN3juTYXBotgkRFxKbMP8FXRI9JAmw/";
+
 	public static void main(String[] args) {
 	
-		TreeNode root = new TreeNode("root","root",null,null);
-
-		TreeNode cursor;
-
-		root.addChild("category","pizza",null);
-		cursor = root.getChild("pizza");
-		cursor.addChild("restaurant","Friend Brothers",null);
-		// Friend Brother's Pizza
-		
-		cursor = root.getChild("Friend Brother's Pizzeria");
-		cursor.addChild("meal", "Main course", null);
-		cursor.addChild("meal", "Drink", null);
-		cursor = cursor.getChild("Main Course");
-		cursor.addChild("food", "Cockatrice Pizza", 
-				new Item("Cockatrice Pizza","001",999999));
-		cursor.addChild("food", "Paperoni Pizza", 
-				new Item("Paperoni Pizza","002",0.5));
-		cursor = cursor.getFather().getChild("Drink");
-		cursor.addChild("food", "MtnDew", new Item("MtnDew", "012", 5));
+		TreeNode root = FullTree.instanciate();
 
 		JSONObject botOption =  Client.doGet(urlbase+apibase+"getMe");
 		JSONObject botInfo = botOption.getJSONObject("result");
 		System.out.println(botInfo.get("first_name"));
 		
 		int lastId = 0;
+		Map<Long, StateMachine> hash_user_statemachine = new LinkedHashMap<>();
 		while(true){
-			JSONObject update = Client.doGet(urlbase+apibase+"getUpdates?limit=1&offset="+lastId);
-			
-			JSONArray result = update.getJSONArray("result");
-			if(result.length() == 0) continue;
-			
-			JSONObject msg = result.getJSONObject(0).getJSONObject("message");
-			Long chatId = msg.getJSONObject("chat").getLong("id");
-			
-			String txt = (String) msg.get("text");
-			int id = result.getJSONObject(0).getInt("update_id");
-			JSONObject user = msg.getJSONObject("from");
-			
-			lastId = id+1;
-			System.out.println(user.getString("first_name") + ": " + txt);
-			
-			List<NameValuePair> parameters = new ArrayList<>();
-			parameters.add(new BasicNameValuePair("chat_id", chatId.toString()));
-			parameters.add(new BasicNameValuePair("text", "Fala leks!"));
-			
-			JSONObject ret = Client.doPost(urlbase+apibase+"sendMessage", parameters);
+			try {
+				JSONObject update = Client.doGet(urlbase+apibase+"getUpdates?limit=1&offset="+lastId);
+				
+				JSONArray result = update.getJSONArray("result");
+				if(result.length() == 0) continue;
+				
+				
+				JSONObject msg = result.getJSONObject(0).getJSONObject("message");
+				Long chatId = msg.getJSONObject("chat").getLong("id");
+				
+				String usrMessage = (String) msg.get("text");
+				int id = result.getJSONObject(0).getInt("update_id");
+				lastId = id+1;
+				
+				JSONObject user = msg.getJSONObject("from");
+				Long usrId = user.getLong("id");
+				if(hash_user_statemachine.get(usrId) == null){
+					hash_user_statemachine.put(usrId, new StateMachine(usrId.toString(), root));
+					
+					String returnToUsr = "Hello " + user.getString("first_name") + " how are you today?\n";
+					List<NameValuePair> parameters = new ArrayList<>();
+					parameters.add(new BasicNameValuePair("chat_id", chatId.toString()));
+					parameters.add(new BasicNameValuePair("text", returnToUsr));
+					JSONObject ret = Client.doPost(urlbase+apibase+"sendMessage", parameters);
+				}
+				
+				System.out.println(user.getString("first_name") + ": " + usrMessage);
+				StateMachine sm = hash_user_statemachine.get(usrId);
+				
+				
+				String returnToUsr;
+				if("/cancel".equals(usrMessage)){
+					returnToUsr = "Order successfully cancelled! \nIf you want to try again please press /start \n";
+					hash_user_statemachine.remove(usrId);
+					List<NameValuePair> parameters = new ArrayList<>();
+					parameters.add(new BasicNameValuePair("chat_id", chatId.toString()));
+					parameters.add(new BasicNameValuePair("text", returnToUsr));
+					JSONObject ret = Client.doPost(urlbase+apibase+"sendMessage", parameters);
+					continue;
+				} else if("/purchase".equals(usrMessage)){
+					returnToUsr = "Great. Your order is done!";
+					hash_user_statemachine.remove(usrId);
+					List<NameValuePair> parameters = new ArrayList<>();
+					parameters.add(new BasicNameValuePair("chat_id", chatId.toString()));
+					parameters.add(new BasicNameValuePair("text", returnToUsr));
+					JSONObject ret = Client.doPost(urlbase+apibase+"sendMessage", parameters);
+					continue;
+				}
+				
+				String processResult = sm.processMessage(usrMessage);
+				returnToUsr = processResult;
+				if("".equals(processResult)){
+					returnToUsr = "Type your command again";
+				}
+				
+				List<NameValuePair> parameters = new ArrayList<>();
+				parameters.add(new BasicNameValuePair("chat_id", chatId.toString()));
+				parameters.add(new BasicNameValuePair("text", returnToUsr));
+				JSONObject ret = Client.doPost(urlbase+apibase+"sendMessage", parameters);			
+			} catch (Exception e) {
+				e.printStackTrace();
+				// TODO: handle exception
+			}
 		}
 		
 	}
