@@ -46,7 +46,7 @@ public class Client {
 	public static JSONObject doPost(String url, List<NameValuePair> parameters) {
 		try {
 			CloseableHttpClient client = HttpClientBuilder.create().build();
-			HttpPost post = new HttpPost();
+			HttpPost post = new HttpPost(url);
 			post.setEntity(new UrlEncodedFormEntity(parameters));
 			String str = "";
 

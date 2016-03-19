@@ -1,3 +1,3 @@
-oi
+This is the README for our take in a chatbot application for Telegram.
 
-este é um commit teste
+Made for the Movile chatbot Hackathon of March 19th, 2016.
